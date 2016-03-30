@@ -1,0 +1,50 @@
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Fortran module files
+*.mod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+#All folders
+/Release/*
+/Debug/*
+/leafProject/AntTweakBar-1.16/*
+/leafProject/common/*
+/leafProject/Release/*
+/leafProject/Debug/*
+/leafProject/x64/*
+/leafProject/meshes/*
+/leafProject/textures/*
+/leafProject/glm/*
+/leafProject/lib/*
+.vs/*
+*.user
+*.vcxproj
+*.filters
+*.sln
+*.sdf
+*.opensdf
+
+# Images
+.png
+.bmp
+.jpg
+
+# Executables
+*.out
+*.app
