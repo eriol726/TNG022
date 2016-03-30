@@ -41,9 +41,9 @@
 *.opensdf
 
 # Images
-.png
-.bmp
-.jpg
+*.png
+*.bmp
+*.jpg
 
 # Executables
 *.out

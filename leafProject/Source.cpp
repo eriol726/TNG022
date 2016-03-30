@@ -1,6 +1,8 @@
 // Link statically with GLEW
 //#define GLEW_STATIC
 // Headers
+//#ifndef GLM_GTX_string_cast
+//#define GLM_GTX_string_cast
 
 #include <windows.h>
 #include <GL/glew.h>
@@ -10,28 +12,47 @@ GLFWwindow* window;
 #include <ctime>
 #include <SOIL.h>
 #include <vector>
-#include <time.h>
+#include <string>
 
+#include "btBulletCollisionCommon.h"
+#include "btBulletDynamicsCommon.h"
+#include "BulletDynamics\Dynamics\btDynamicsWorld.h"
+#include "BulletCollision\Gimpact\btGImpactCollisionAlgorithm.h"
 
 
 #include "Leaf.h"
 #include "World.h"
-#include <vector>
+
 
 // Include GLM
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/string_cast.hpp>
+#include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/norm.hpp>
+using namespace glm;
+
+// Include AntTweakBar
+#include <common/AntTweakBar.h>
 
 using namespace glm;
 #include <common/shader.hpp>
 #include <common/controls.hpp>
+#include <common/objloader.hpp>
+#include <common/vboindexer.hpp>
+#include <common/quaternion_utils.hpp> // See quaternion_utils.cpp for RotationBetweenVectors, LookAt and RotateTowards
+
+
+
 
 void loadTexture(const char * imagepath, GLuint shaderProgram, const char * name, int i);
 
 int main()
 {
+
 	// Initialise GLFW
 	if (!glfwInit())
 	{
@@ -41,20 +62,22 @@ int main()
 
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	//glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	// Open a window and create its OpenGL context
 
-	window = glfwCreateWindow(1000, 800, "Tutorial 01", NULL, NULL);
-	if (window == NULL){
+
+
+	window = glfwCreateWindow(1000, 700, "Tutorial 01", NULL, NULL);
+	if (window == NULL) {
 		fprintf(stderr, "Failed to open GLFW window.");
 		glfwTerminate();
 		return -1;
 	}
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
-	glfwWindowHint(GLFW_REFRESH_RATE, 60);
+
 	// Initialize GLEW
 	glewExperimental = true; // Needed for core profile
 	if (glewInit() != GLEW_OK) {
@@ -62,12 +85,14 @@ int main()
 		return -1;
 	}
 
+
 	// Ensure we can capture the escape key being pressed below
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
+
 	GLfloat vertices[] = {
 		//shape				//color			//uv-coord
-		-0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,	//topp
+		-0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,	//löv
 		-0.5f, 0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
 		-0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
 		-0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f,
@@ -87,7 +112,10 @@ int main()
 		3.5f, 3.5f, -3.5f, 1.0f, 1.0f, 0.9f, 0.0f, 0.0f,
 		-3.5f, 3.5f, -3.5f, 1.0f, 1.0f, 0.9f, 0.0f, 1.0f,
 		-3.5f, -3.5f, -3.5f, 1.0f, 1.0f, 0.9f, 1.0f, 1.0f
+
+
 	};
+
 
 	// Create Vertex Array Object
 	GLuint vao;
@@ -105,7 +133,7 @@ int main()
 
 	//useShader
 	glUseProgram(shaderProgram);
-	//GLFW_REFRESH_RATE(60.f);
+
 
 	GLuint textures[2];
 	glGenTextures(2, textures);
@@ -115,9 +143,11 @@ int main()
 	glBindTexture(GL_TEXTURE_2D, textures[0]);
 	loadTexture("sampleDog.png", shaderProgram, "texDog", 0);
 
+
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, textures[1]);
 	loadTexture("sampleLeaf.png", shaderProgram, "texLeaf", 1);
+
 
 	GLint MatrixID = glGetUniformLocation(shaderProgram, "MVP");
 
@@ -125,47 +155,53 @@ int main()
 
 	GLint uniColor = glGetUniformLocation(shaderProgram, "overrideColor");
 
+
+
 	// Specify the layout of the vertex data
 	GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
 	glEnableVertexAttribArray(posAttrib);
 	glVertexAttribPointer(posAttrib, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), 0);
 
+
 	GLint colAttrib = glGetAttribLocation(shaderProgram, "color");
 	glEnableVertexAttribArray(colAttrib);
 	glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+
 
 	GLint texAttrib = glGetAttribLocation(shaderProgram, "texcoord");
 	glEnableVertexAttribArray(texAttrib);
 	glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
 	// Compute the MVP matrix from keyboard and mouse input
 
+
 	//sätter alla variabler
 	double airCoeff = 1.28;
 	double dens = 1.2041;
 	double area = 0.0025;
-	double mass = 0.005;
+	double mass = 0.1;
+	double life = 3.0;
 	btVector3 pos(0, 0, 0);
-	btVector3 startAngVel(0.f, 0.f, 0.f);
+	btVector3 startAngle(0.f, 0.f, 0.f);
 	btVector3  flu(0.0f, 0.0f, 0.0f);
 	vector <Leaf> theLeaves;
 	srand(time(NULL));
-	btVector3 wind(0.0f, 0.0f, 0.0f);
-	btVector3 randomForce(0, 0, 0);
+	btVector3 wind(0.0f, 1.0f, 0.0f);
+
 	World theWorld;
 	btScalar transMatrix[16];
 
 	btVector3 airCurrent = wind + theWorld.getDynamicsWorld()->getGravity();
-	//airCurrent.normalized();
+	airCurrent.normalized();
 
 	btRigidBody* body;
-	for (int i = 0; i <800; i++)
+	for (int i = 0; i < 100; i++)
 	{
 		float randNumbX = rand() % 10 - 5;
-		float randNumbY = rand() % 20 - 10;
+		float randNumbY = rand() % 10 - 5;
 		float randNumbZ = rand() % 10 - 5;
 		pos = btVector3(randNumbX, randNumbY, randNumbZ);
-		startAngVel = btVector3(randNumbX * 10, randNumbY * 5, randNumbZ * 10);
-		Leaf newLeaf(mass, area, dens, airCoeff, pos, flu, startAngVel);
+		startAngle = btVector3(randNumbX * 10, randNumbY * 5, randNumbZ * 10);
+		Leaf newLeaf(mass, area, dens, airCoeff, pos, flu, startAngle, life);
 
 
 		theLeaves.push_back(newLeaf);
@@ -174,19 +210,26 @@ int main()
 
 	}
 
-	do{
-		//glEnable(GL_DEPTH_TEST);
+	double lastTime = glfwGetTime();
+	//double lastFrameTime = lastTime;
+
+	do {
+		double currentTime = glfwGetTime();
+		double deltaTime = currentTime - lastTime;
+		lastTime = currentTime;
+
+		glEnable(GL_DEPTH_TEST);
 		//glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_LESS);
-		glDepthMask(GL_TRUE);
-		//glDisable(GL_CULL_FACE);
+		//glDepthMask(GL_TRUE);
+		glDisable(GL_CULL_FACE);
 
 		// Dark blue background
 		glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
 		//glClearDepth(1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		float time = (float)glfwGetTime();
+		//float time = (float)glfwGetTime();
 
 		computeMatricesFromInputs();
 		glm::mat4 ProjectionMatrix = getProjectionMatrix();
@@ -194,17 +237,38 @@ int main()
 		glm::mat4 ModelMatrix = glm::mat4(1.0);
 		glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
 
+		/*
+		for (int i = 0; i < 4; i++){
+		std::cout << ViewMatrix[i].x << " ";
+		std::cout << ViewMatrix[i].y << " ";
+		std::cout << ViewMatrix[i].z << " ";
+		std::cout << ViewMatrix[1].w << " ";
+		std::cout << std::endl;
+		}*/
+
+		//std::cout << endl;
+		//std::cout << glm::to_string(ViewMatrix) << std::endl << endl << endl;
+
+
 		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
+
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		// getOpenGLMatrix();
-		glm::mat4 model = glm::rotate(1.57f, glm::vec3(0, 0, 1));
+
+		glm::mat4 skal = glm::scale(2.0f, 2.0f, 2.0f);
+
+
+		glm::mat4 rot = glm::rotate(90.0f, 0.0f, 0.0f, 1.0f);
+
+		glm::mat4 model = skal*rot;
 
 		glUniformMatrix4fv(uniModel, 1, GL_FALSE, glm::value_ptr(model));
 
 		//draw plane
-		//	glDrawArrays(GL_TRIANGLES, 6, 12);
+		glDrawArrays(GL_TRIANGLES, 6, 18);
+
+
 
 		float ratio;
 		int width, height;
@@ -216,88 +280,78 @@ int main()
 		btTransform trans;
 		btTransform trans_local;
 
+		//sätter krafter på varje löv
 		for (std::vector<Leaf>::iterator it = theLeaves.begin(); it != theLeaves.end(); ++it)
 		{
 
-			if (it->getBody()->getCenterOfMassPosition().getY() > -30.f){
+			if (it->getBody()->getCenterOfMassPosition().getY()> -5.0f) {
 
-				btVector3 airCurrent2 = it->normVec(airCurrent);
-				btVector3 normal = it->normVec(it->getRotation());
-				double areaMult = it->bulletScalar(normal, airCurrent2);
-				btVector3 pos = it->getPosition();
+
+				glTranslatef(it->getFlutter(it->getRotation()).getX(), it->getFlutter(it->getRotation()).getY(), 0);
+
+				it->getBody()->setAngularVelocity(it->getRotation());
+
 				velo = it->getBody()->getLinearVelocity();
 
-				btVector3 flutter = btVector3(
-					it->getFlutter(it->getAngVel(), areaMult).getX(),
-					it->getFlutter(it->getAngVel(), areaMult).getY(),
-					it->getFlutter(it->getAngVel(), areaMult).getZ()
-					);
+				airRes = it->getAirResistance(velo, area, dens);
 
-				it->getBody()->applyCentralForce(flutter);
-
-				airRes = it->getAirResistance(velo, areaMult*area, dens);
-				btVector3 sumForces = flutter + airCurrent + btVector3(0, airRes, 0);
-				btVector3 radius = btVector3(normal.getX(), ((-1)*normal.getY()), normal.getZ());
-				radius = btVector3(radius.getX()*0.03, radius.getY()*0.03, radius.getZ()*0.03);
-
-				btVector3 torqueVec = radius.cross(sumForces);
-				it->getBody()->applyTorque(torqueVec);
-				if (true)
-					it->getBody()->setAngularVelocity(areaMult*it->getAngVel());
-				else
-					it->getBody()->applyCentralForce(airCurrent*mass);
-
-
-				//it->getBody()->setAngularVelocity(it->noise());
-				it->getBody()->applyCentralForce(btVector3(0, airRes, 0));
-
-				float torqueDampx = (-area / 2)*dens*0.05*(pow(0.05, 4)*pow(it->getAngVel().getX(), 2));
-				float torqueDampy = (-area / 2)*dens*0.05*(pow(0.05, 4)*pow(it->getAngVel().getY(), 2));
-				float torqueDampz = (-area / 2)*dens*0.05*(pow(0.05, 4)*pow(it->getAngVel().getZ(), 2));
-				it->getBody()->applyTorque(btVector3(torqueDampx, torqueDampy, torqueDampz));
-
-				/*
-				it->getBody()->applyTorque(
-				btVector3(
-				it->getFlutter(it->getAngVel(), areaMult).getX()*mass + airCurrent.getX()*mass,
-				it->getFlutter(it->getAngVel(), areaMult).getY()*mass + airRes + airCurrent.getY()*mass,
-				it->getFlutter(it->getAngVel(), areaMult).getZ()*mass + airCurrent.getZ()*mass
-				));
-				*/
+				it->getBody()->applyCentralForce(btVector3(0.f, airRes, 0.f));
 				it->getBody()->getMotionState()->getWorldTransform(trans);
-				//it -> getBody()->rotate
+
 				trans.getOpenGLMatrix(transMatrix);
+
+
+
 
 				glUniformMatrix4fv(uniModel, 1, GL_FALSE, transMatrix);
 
 				glMultMatrixf((GLfloat*)transMatrix);
 
+				//löv
 				glDrawArrays(GL_TRIANGLES, 0, 6);
 				glUniform3f(uniColor, 1.0f, 1.0f, 1.0f);
+
+
+				//std::cout << "Y-pos: " << theLeaves.at(2).getPosition().getY() << endl;
+
 			}
-			else
-			{
-				it->getBody()->translate(btVector3(0.0f, 35.f, 0.f));
+			else {
+
+				it->setPosition(btVector3(0, 10, 0));
+				//it->life = 3.0;
 			}
 
 		}
 
+
+
+
+
+		//Draw GUI
+		//TwDraw();
 		// Swap buffers
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 
 	} // Check if the ESC key was pressed or the window was closed
 	while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
-	glfwWindowShouldClose(window) == 0);
+		glfwWindowShouldClose(window) == 0);
+
+
 
 	glfwDestroyWindow(window);
 	glfwTerminate();
+
 
 	glDeleteBuffers(1, &vbo);
 	glDeleteVertexArrays(1, &vao);
 	glDeleteProgram(shaderProgram);
 	glDeleteTextures(1, textures);
 
+
+	// Close GUI and OpenGL window, and terminate GLFW
+	TwTerminate();
 	glfwTerminate();
 	return 0;
+
 }

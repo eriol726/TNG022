@@ -10,7 +10,7 @@
 #include <SOIL.h>
 #pragma warning (disable : 4996)
 
-void loadTexture(const char * imagepath, GLuint shaderProgram, const char * name, int i){
+void loadTexture(const char * imagepath, GLuint shaderProgram, const char * name, int i) {
 
 	printf("Reading image %s\n", imagepath);
 
