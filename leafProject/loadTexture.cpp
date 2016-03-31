@@ -1,16 +1,16 @@
-
-#include <windows.h>
+//#include <windows.h>
+#include <GL/glew.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
-
-#include <GL/glew.h>
-
 #include <GL/glfw3.h>
-#include <SOIL.h>
+
+
+//#include <GL/glfw3.h>
+#include "SOIL.h"
 #pragma warning (disable : 4996)
 
-void loadTexture(const char * imagepath, GLuint shaderProgram, const char * name, int i) {
+void loadTexture(const char * imagepath, GLuint shaderProgram, const char * name, int i){
 
 	printf("Reading image %s\n", imagepath);
 

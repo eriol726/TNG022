@@ -14,8 +14,5 @@ uniform vec3 overrideColor;
 void main() {
    Color = overrideColor * color;
    Texcoord = texcoord;
-   gl_Position =  model * vec4(position, 1.0);
+   gl_Position = MVP  * model * vec4(position, 1.0);
 }
-
-
-

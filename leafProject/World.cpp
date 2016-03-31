@@ -11,13 +11,9 @@
 #include "Leaf.h"
 #include <math.h>
 #include <time.h>
-#include "GL/glfw3.h" // GLFW helper library
-#include "btBulletDynamicsCommon.h"
-#include "btBulletCollisionCommon.h"
-#include "BulletDynamics\Dynamics\btDynamicsWorld.h"
-#include "BulletCollision\Gimpact\btGImpactCollisionAlgorithm.h"
+#include <BulletDynamics/Dynamics/btDynamicsWorld.h>
+#include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
 #include <iostream>
-
 
 World::World()
 {
@@ -30,10 +26,17 @@ World::World()
     
     // The actual physics solver
     solver = new btSequentialImpulseConstraintSolver;
+    groundShape = new btStaticPlaneShape(btVector3(0, -1, 0), 1);
+    
+    groundMotionState = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 1, 0)));
+    btRigidBody::btRigidBodyConstructionInfo
+    groundRigidBodyCI(0, groundMotionState, groundShape, btVector3(0, 0, 0));
+    groundRigidBody = new btRigidBody(groundRigidBodyCI);
     
     // The world.
     dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
-    dynamicsWorld->setGravity(btVector3(0, -9.82f, 0));
+    dynamicsWorld->setGravity(btVector3(0, -9.82, 0));
+    dynamicsWorld->addRigidBody(groundRigidBody);
 }
 void World::initWorld()
 {
@@ -43,11 +46,13 @@ btDiscreteDynamicsWorld* World::getDynamicsWorld()
 {
     return dynamicsWorld;
 }
-World::~World()
+/*World::~World()
 {
-   /* delete solver;
-    delete collisionConfiguration;
+    delete dynamicsWorld;
+    delete solver;
     delete dispatcher;
+    delete collisionConfiguration;
+  
     delete broadphase;
-    delete dynamicsWorld;*/
-}
+    
+}*/

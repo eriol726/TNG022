@@ -15,7 +15,7 @@ class World
 {
     public:
         World();
-        ~World();
+       // ~World();
         void initWorld();
         btDiscreteDynamicsWorld* getDynamicsWorld();
     private:
@@ -24,4 +24,7 @@ class World
         btCollisionDispatcher* dispatcher;
         btSequentialImpulseConstraintSolver* solver;
         btDiscreteDynamicsWorld* dynamicsWorld;
+        btDefaultMotionState* groundMotionState;
+        btCollisionShape* groundShape;
+        btRigidBody* groundRigidBody;
 };

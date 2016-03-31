@@ -38,7 +38,7 @@ public:
 	btVector3 normVec(const btVector3& vec1);
 	btVector3 noise();
 	void setPosition(const btVector3& newPos);
-
+	
 
 protected:
 	glm::vec3 velocity;
