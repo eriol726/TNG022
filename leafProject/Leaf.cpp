@@ -14,15 +14,10 @@
 #include <math.h>
 #include <time.h>
 #include "GL/glfw3.h" // GLFW helper library
-#include "btBulletDynamicsCommon.h"
-#include "btBulletCollisionCommon.h"
-#include <BulletDynamics\Dynamics\btDynamicsWorld.h>
-#include <BulletCollision\Gimpact\btGImpactCollisionAlgorithm.h>
-#include <BulletCollision\CollisionShapes\btSphereShape.h>
 #include <iostream>
 #include <common/shader.hpp>
 
-const int antalPos = 3;
+
 
 Leaf::Leaf(double m, double a, double dens, double air, const btVector3& pos, const btVector3& flu, const btVector3& angleVel)
 {
@@ -34,7 +29,7 @@ Leaf::Leaf(double m, double a, double dens, double air, const btVector3& pos, co
 	flutter = flu;
 	angVel = angleVel;
 
-	rotation = btVector3(rand() % 100 - 50, rand() % 100 - 50, rand() % 100 - 50);
+	rotation = btVector3(rand() % 720 - 360, rand() % 720 - 360, rand() % 720 - 360);
 	rotation = normVec(rotation);
 	fallShape = new btSphereShape(1);
 	fallMotionState =
@@ -46,29 +41,26 @@ Leaf::Leaf(double m, double a, double dens, double air, const btVector3& pos, co
 	leafBody->setLinearVelocity(btVector3(0, 0, 0));
 }
 
-/*Leaf::~Leaf()
-{
-delete leafBody->getMotionState();
-delete fallShape;
-//delete leafBody;
-
-
-}*/
-
-
 btVector3 Leaf::getFlutter(const btVector3& angularPos, float effectiveArea)
 {
 	btVector3 angularPos2 = btVector3(angularPos.getX() / (float)glfwGetTime(), angularPos.getY() / (float)glfwGetTime(), angularPos.getZ() / (float)glfwGetTime());
+	
+	const float width = 0.005;
+	const float length = 0.005;
 
-	float width = 0.005;
-	float length = 0.005;
-	float farokskonstant = sqrt(mass / (density*pow(length, 2)*width));
+	float farokskonstant = sqrt(mass / (density*(pow(length, 2)*width)));
 
-	/**/
-	//fixa med krafter, skaffa Aortogonal, Aparallell och rökna på vinkelpositioner ist för tid.
-	float flutterX = (-effectiveArea*sinf(angularPos2.getX())*sinf(angularPos2.getX()) + (1 - effectiveArea)*abs(cosf(angularPos2.getX()))*cosf(angularPos2.getX() + 3) - abs(sinf(angularPos2.getX() + 3))*cosf(angularPos2.getX() / 2 + 3.14 / 2)) / (farokskonstant);
-	float flutterY = (-effectiveArea*pow(leafBody->getAngularVelocity().getY(), 2) / farokskonstant * (sinf(angularPos2.getY())*cosf(angularPos2.getY()) + abs(cosf(angularPos2.getY()))*sinf(angularPos2.getY() + 3) - abs(sinf(angularPos2.getY() + 3))*sinf(angularPos.getY() / 2 + 3.14 / 2)) / (farokskonstant));
-	float flutterZ = ((1 - effectiveArea )- sinf(angularPos2.getZ())*sinf(angularPos2.getZ()) + effectiveArea* abs(cosf(angularPos2.getZ()))*cosf(angularPos2.getZ() + 3) - abs(sinf(angularPos2.getZ() + 3))*cosf(angularPos2.getZ() / 2 + 3.14 / 2)) / (farokskonstant);
+	float flutterX = (-effectiveArea*sinf(angularPos2.getX())*sinf(angularPos2.getX()-3.14) +
+		(1 - effectiveArea)*abs(cosf(angularPos2.getX()))*cosf(angularPos2.getX() - 3.14 / 2) -
+		abs(sinf(angularPos2.getX() + 3.14))*cosf(angularPos2.getX() / 2 + 3.14 / 2)) / (farokskonstant);
+
+	float flutterY = (-effectiveArea*pow(leafBody->getAngularVelocity().getY(), 2) / farokskonstant * 
+		(sinf(angularPos2.getY())*cosf(angularPos2.getY()-3.14) + (cosf(angularPos2.getY()))*sinf(angularPos2.getY() - 3.14) 
+		- abs(sinf(angularPos2.getY() + 3.14))*sinf(angularPos.getY() / 2 + 3.14 / 2)) / (farokskonstant))-1/farokskonstant;
+	
+	float flutterZ = ((1 - effectiveArea )- sinf(angularPos2.getZ())*sinf(angularPos2.getZ()-3.14) + 
+		effectiveArea* abs(cosf(angularPos2.getZ()))*cosf(angularPos2.getZ() - 3.14) - abs(sinf(angularPos2.getZ()))
+		*cosf(angularPos2.getZ() / 2 + 3.14 / 2)) / (farokskonstant);
 
 	//std::cout << flutter << '\n';*/
 	flutter = btVector3(flutterX, flutterY, flutterZ);
@@ -78,7 +70,7 @@ btVector3 Leaf::getFlutter(const btVector3& angularPos, float effectiveArea)
 
 double Leaf::getAirResistance(const btVector3& velocity, double a, double d)
 {
-    double airRes = pow(velocity.getY(), 2)*a*d;
+    double airRes = pow(velocity.getY(), 2)*a*d*1.28;
     return airRes;
 }
 btRigidBody* Leaf::getBody()
@@ -93,9 +85,12 @@ btVector3 Leaf::getRotation()
 
 btVector3 Leaf::getAngVel()
 {	
-	btVector3 AngVel = btVector3(leafBody->getLinearVelocity().getX() / 0.5 - 1, leafBody->getLinearVelocity().getY() / 5, leafBody->getLinearVelocity().getZ() / 0.5 - 1);
+	btVector3 AngVel = btVector3(
+		leafBody->getLinearVelocity().getX()/0.035 ,
+		leafBody->getLinearVelocity().getY()/0.5,
+		leafBody->getLinearVelocity().getZ()/0.035 );
 	rotation = rotation + AngVel;
-	//rotation = rotation.normalized();
+
 	return AngVel;
 }
 double Leaf::getMass()
@@ -131,7 +126,7 @@ btVector3 Leaf::noise(){
 	//skickar tillbaka en vector med impulskrafter för att bryta upp
 	//"molnet" med löv, anpassade storleken efter hur stora resten av
 	//krafterna är,detta är inte förankrat i verkligheten.
-	return btVector3(noiseX/5000, noiseY/5000, noiseZ/5000);
+	return btVector3(noiseX/500, noiseY/500, noiseZ/500);
 }
 
 btVector3 Leaf::getPosition()
@@ -143,7 +138,6 @@ btVector3 Leaf::getPosition()
 
 void Leaf::setPosition(const btVector3& newPos){
 	position = newPos;
-	
 	getBody()->translate(btVector3(position));
 
 }

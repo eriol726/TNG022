@@ -11,8 +11,8 @@
 #include "Leaf.h"
 #include <math.h>
 #include <time.h>
-#include <BulletDynamics/Dynamics/btDynamicsWorld.h>
-#include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
+#include "GL/glfw3.h" // GLFW helper library
+
 #include <iostream>
 
 World::World()
