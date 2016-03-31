@@ -7,16 +7,21 @@ out vec4 outColor;
 
 uniform sampler2D texDog;
 uniform sampler2D texLeaf;
+uniform sampler2D texCube;
 
 
 void main() {
-			//floor					//leaf
-	
-if (Color == vec3(1.0f,1.0f,0.9f)){
+		
+	if (Color == vec3(1.0f,1.0f,0.9f)){
         outColor = vec4(Color, 1.0) * texture(texDog, Texcoord);
-    } else {
+    } 
+	else {
         outColor = vec4(Color, 1.0) * texture(texLeaf, Texcoord);
     }
    
    
 }
+   
+
+
+
